@@ -73,7 +73,7 @@ def train_model(dataset):
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512   # faster, and good enough for this toy dataset (default: 512)
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(dataset.categories)  # number of categories
 #     cfg.MODEL.DEVICE = 'cuda'
-
+    print('Max iter is ',cfg.SOLVER.MAX_ITER)
     # Start the training
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     trainer = DefaultTrainer(cfg) 
