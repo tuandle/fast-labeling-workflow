@@ -74,6 +74,7 @@ def train_model(dataset):
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(dataset.categories)  # number of categories
 #     cfg.MODEL.DEVICE = 'cuda'
     print('Max iter is ',cfg.SOLVER.MAX_ITER)
+    print('Current path is ',cfg.OUTPUT_DIR)
     # Start the training
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     trainer = DefaultTrainer(cfg) 
