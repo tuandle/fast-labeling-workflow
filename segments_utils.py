@@ -9,7 +9,7 @@ from detectron2.engine import DefaultTrainer, DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.data.datasets import register_coco_instances, load_coco_json
-from detectron2.checkpoint import DetectionCheckpointer
+#from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.modeling import build_model
 
 import numpy as np
@@ -89,9 +89,9 @@ def train_model(dataset):
     cfg.TEST.DETECTIONS_PER_IMAGE = 1000
     
     built_model = build_model(cfg)  # returns a torch.nn.Module
-    DetectionCheckpointer(built_model).load(cfg.MODEL.WEIGHTS) #capture trained model
-    checkpointer = DetectionCheckpointer(built_model, save_dir="/content/gdrive/My Drive/Colab Notebooks")
-    checkpointer.save("model_final")  # save to output/model_999.pth
+    #DetectionCheckpointer(built_model).load(cfg.MODEL.WEIGHTS) #capture trained model
+    #checkpointer = DetectionCheckpointer(built_model, save_dir="/content/gdrive/My Drive/Colab Notebooks")
+    #checkpointer.save("model_final")  # save to output/model_999.pth
     
     predictor = DefaultPredictor(cfg)
     model = Model(predictor)
