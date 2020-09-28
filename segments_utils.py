@@ -9,7 +9,7 @@ from detectron2.engine import DefaultTrainer, DefaultPredictor
 from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog
 from detectron2.data.datasets import register_coco_instances, load_coco_json
-#from detectron2.checkpoint import DetectionCheckpointer
+from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.modeling import build_model
 
 import numpy as np
@@ -26,7 +26,8 @@ class Model:
 
     def _convert_to_segments_format(self, image, outputs):
         # https://tech.amikelive.com/node-718/what-object-categories-labels-are-in-coco-dataset/
-        segmentation_bitmap = np.zeros((image.shape[0], image.shape[1]), np.uint32)
+        segmentation_bitmap = np.zeros(
+            (image.shape[0], image.shape[1]), np.uint32)
         annotations = []
         counter = 1
         instances = outputs['instances']
@@ -45,60 +46,69 @@ class Model:
         label, label_data = self._convert_to_segments_format(image, outputs)
 
         return label, label_data
-    
+
 
 def train_model(dataset):
     # Export the dataset to COCO format
     export_file, image_dir = export_dataset(dataset)
-    
+
     # Register it as a COCO dataset in the Detectron2 framework
     try:
         register_coco_instances('my_dataset', {}, export_file, image_dir)
     except:
         print('Dataset was already registered')
     dataset_dicts = load_coco_json(export_file, image_dir)
-    MetadataCatalog.get('my_dataset').set(thing_classes=[c['name'] for c in dataset.categories])
+    MetadataCatalog.get('my_dataset').set(
+        thing_classes=[c['name'] for c in dataset.categories])
     segments_metadata = MetadataCatalog.get('my_dataset')
     print(segments_metadata)
-    
+
     # Configure the training run
     cfg = get_cfg()
-    cfg.merge_from_file(model_zoo.get_config_file('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
+    cfg.merge_from_file(model_zoo.get_config_file(
+        'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml'))
     cfg.DATASETS.TRAIN = ('my_dataset',)
     cfg.DATASETS.TEST = ()
     cfg.INPUT.MASK_FORMAT = 'bitmask'
     cfg.DATALOADER.NUM_WORKERS = 2
-    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url('COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')  # Let training initialize from model zoo
-    cfg.SOLVER.IMS_PER_BATCH = 4 # 4
+    cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(
+        'COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x.yaml')  # Let training initialize from model zoo
+    cfg.SOLVER.IMS_PER_BATCH = 4  # 4
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 6    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512   # faster, and good enough for this toy dataset (default: 512)
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(dataset.categories)  # number of categories
+    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 6
+    # faster, and good enough for this toy dataset (default: 512)
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 512
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = len(
+        dataset.categories)  # number of categories
 #     cfg.MODEL.DEVICE = 'cuda'
-    print('Max iter is ',cfg.SOLVER.MAX_ITER)
+    print('Max iter is ', cfg.SOLVER.MAX_ITER)
     # Start the training
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-    trainer = DefaultTrainer(cfg) 
+    trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=False)
     trainer.train()
-    
+
     # Return the model
     cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, 'model_final.pth')
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set the testing threshold for this model
+    # set the testing threshold for this model
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7
     cfg.DATASETS.TEST = ('my_dataset', )
     cfg.TEST.DETECTIONS_PER_IMAGE = 1000
-    
+
     built_model = build_model(cfg)  # returns a torch.nn.Module
-    #DetectionCheckpointer(built_model).load(cfg.MODEL.WEIGHTS) #capture trained model
-    #checkpointer = DetectionCheckpointer(built_model, save_dir="/content/gdrive/My Drive/Colab Notebooks")
-    #checkpointer.save("model_final")  # save to output/model_999.pth
-    
+    DetectionCheckpointer(built_model).load(
+        cfg.MODEL.WEIGHTS)  # capture trained model
+    checkpointer = DetectionCheckpointer(
+        built_model, save_dir="/content/gdrive/My Drive/Colab Notebooks")
+    checkpointer.save("model_final")  # save to output/model_999.pth
+
     predictor = DefaultPredictor(cfg)
     model = Model(predictor)
 
     return model
-    
-    
+
+
 def get_image_urls(topic):
     with open('{}.json'.format(topic)) as json_file:
         image_urls = json.load(json_file)
@@ -108,6 +118,6 @@ def get_image_urls(topic):
 def visualize(*args):
     images = args
     for i, image in enumerate(images):
-        plt.subplot(1,len(images),i+1)
+        plt.subplot(1, len(images), i+1)
         plt.imshow(np.array(image))
     plt.show()
